@@ -1,10 +1,8 @@
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.List;
-import java.util.Arrays;
 import java.util.Random;
 
-public class Oppgave1 {
+public class Oving1 {
   final static int STARTING_SALDO = 0;
   final static Random random = new Random();
   public static void main(String[] args) {
