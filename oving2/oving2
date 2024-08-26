@@ -1,0 +1,34 @@
+public class Oving2 {
+    public static void main(String[] args) {
+
+        System.out.println(metode1(2.0, 10));
+        System.out.println(metode2(2.0, 10));
+        System.out.println(metode3(2.0, 10));
+    }
+
+    public static double metode1(double x, int n) {
+        if (n == 1){
+            return x;
+        } else {
+            return x * metode1(x, n-1);
+        }
+    }
+
+    public static double metode2(double x, int n){
+        if (n == 1){
+            return x;
+        }
+
+        if ((n & 1) == 1){ // oddetall
+            return x * metode2(x, (n-1)/2) * metode2(x, (n-1)/2);
+        } else { // parttall
+            return metode2(x, n/2) * metode2(x, n/2);
+        }
+    }
+
+    public static double metode3(double x, int n){
+        double newN = n;
+        return Math.pow(x, newN);
+    }
+
+}
