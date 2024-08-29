@@ -1,34 +1,194 @@
+
+import java.util.Date;
+
 public class Oving2 {
-    public static void main(String[] args) {
+  public static void main(String[] args) {
+    double svar1 = metode1(5, 11);
+    double svar2 = metode2(5, 11);
+    double svar3 = metode3(5, 11);
+    System.out.println(svar1);
+    System.out.println(svar2);
+    System.out.println(svar3);
 
-        System.out.println(metode1(2.0, 10));
-        System.out.println(metode2(2.0, 10));
-        System.out.println(metode3(2.0, 10));
+    int n0 = 10000;
+    int n1 = 20000;
+    int n2 = 25000;
+    int x = 1;
+
+    /* Metode 1 */
+    System.out.println("Metode 1");
+
+    Date start = new Date();
+    int runder = 0;
+    double tid;
+    Date slutt;
+    do {
+      metode1(1.001, 10);
+      slutt = new Date();
+      ++runder;
+    } while (slutt.getTime() - start.getTime() < 1000);
+    tid = (double)
+        (slutt.getTime() - start.getTime()) / runder;
+    System.out.println("10: " + "Millisekund pr. runde:" + tid);
+
+    start = new Date();
+    runder = 0;
+    do {
+      metode1(1.001, 100);
+      slutt = new Date();
+      ++runder;
+    } while (slutt.getTime() - start.getTime() < 1000);
+    tid = (double)
+        (slutt.getTime() - start.getTime()) / runder;
+    System.out.println("100: " + "Millisekund pr. runde:" + tid);
+
+    start = new Date();
+    runder = 0;
+    do {
+      metode1(1.001, 1000);
+      slutt = new Date();
+      ++runder;
+    } while (slutt.getTime() - start.getTime() < 1000);
+    tid = (double)
+        (slutt.getTime() - start.getTime()) / runder;
+    System.out.println("1000: " + "Millisekund pr. runde:" + tid);
+
+    start = new Date();
+    runder = 0;
+    do {
+      metode1(1.001, 10000);
+      slutt = new Date();
+      ++runder;
+    } while (slutt.getTime() - start.getTime() < 1000);
+    tid = (double)
+        (slutt.getTime() - start.getTime()) / runder;
+    System.out.println("10000: " + "Millisekund pr. runde:" + tid);
+
+    System.out.println("");
+
+    /* Metode 2 */
+    System.out.println("Metode 2");
+
+
+    start = new Date();
+    runder = 0;
+    do {
+      metode2(1.001, 10);
+      slutt = new Date();
+      ++runder;
+    } while (slutt.getTime() - start.getTime() < 1000);
+    tid = (double)
+        (slutt.getTime() - start.getTime()) / runder;
+    System.out.println("10: " + "Millisekund pr. runde:" + tid);
+
+    start = new Date();
+    runder = 0;
+    do {
+      metode2(1.001, 100);
+      slutt = new Date();
+      ++runder;
+    } while (slutt.getTime() - start.getTime() < 1000);
+    tid = (double)
+        (slutt.getTime() - start.getTime()) / runder;
+    System.out.println("100: " + "Millisekund pr. runde:" + tid);
+
+    start = new Date();
+    runder = 0;
+    do {
+      metode2(1.001, 1000);
+      slutt = new Date();
+      ++runder;
+    } while (slutt.getTime() - start.getTime() < 1000);
+    tid = (double)
+        (slutt.getTime() - start.getTime()) / runder;
+    System.out.println("1000: " + "Millisekund pr. runde:" + tid);
+
+    start = new Date();
+    runder = 0;
+    do {
+      metode2(1.001, 10000);
+      slutt = new Date();
+      ++runder;
+    } while (slutt.getTime() - start.getTime() < 1000);
+    tid = (double)
+        (slutt.getTime() - start.getTime()) / runder;
+    System.out.println("10000: " + "Millisekund pr. runde:" + tid);
+
+    System.out.println("");
+
+    /* Metode 3 */
+    System.out.println("Metode 3");
+
+    start = new Date();
+    runder = 0;
+    do {
+      metode3(1.001, 10);
+      slutt = new Date();
+      ++runder;
+    } while (slutt.getTime() - start.getTime() < 1000);
+    tid = (double)
+        (slutt.getTime() - start.getTime()) / runder;
+    System.out.println("10: " + "Millisekund pr. runde:" + tid);
+
+    start = new Date();
+    runder = 0;
+    do {
+      metode3(1.001, 100);
+      slutt = new Date();
+      ++runder;
+    } while (slutt.getTime() - start.getTime() < 1000);
+    tid = (double)
+        (slutt.getTime() - start.getTime()) / runder;
+    System.out.println("100: " + "Millisekund pr. runde:" + tid);
+
+    start = new Date();
+    runder = 0;
+    do {
+      metode3(1.001, 1000);
+      slutt = new Date();
+      ++runder;
+    } while (slutt.getTime() - start.getTime() < 1000);
+    tid = (double)
+        (slutt.getTime() - start.getTime()) / runder;
+    System.out.println("1000: " + "Millisekund pr. runde:" + tid);
+
+    start = new Date();
+    runder = 0;
+    do {
+      metode3(1.001, 10000);
+      slutt = new Date();
+      ++runder;
+    } while (slutt.getTime() - start.getTime() < 1000);
+    tid = (double)
+        (slutt.getTime() - start.getTime()) / runder;
+    System.out.println("10000: " + "Millisekund pr. runde:" + tid);
+
+
+  }
+
+  public static double metode1(double x, int n) {
+    if (n == 1){
+      return x;
+    } else {
+      return x * metode1(x, n-1);
+    }
+  }
+
+  public static double metode2(double x, int n){
+    if (n == 1){
+      return x;
     }
 
-    public static double metode1(double x, int n) {
-        if (n == 1){
-            return x;
-        } else {
-            return x * metode1(x, n-1);
-        }
+    if ((n & 1) == 1){ // oddetall
+      return x * metode2(x*x, (n-1)/2);
+    } else { // parttall
+      return metode2(x*x, n/2);
     }
+  }
 
-    public static double metode2(double x, int n){
-        if (n == 1){
-            return x;
-        }
-
-        if ((n & 1) == 1){ // oddetall
-            return x * metode2(x, (n-1)/2) * metode2(x, (n-1)/2);
-        } else { // parttall
-            return metode2(x, n/2) * metode2(x, n/2);
-        }
-    }
-
-    public static double metode3(double x, int n){
-        double newN = n;
-        return Math.pow(x, newN);
-    }
-
+  public static double metode3(double x, int n){
+    double newN = n;
+    return Math.pow(x, newN);
+  }
 }
+
