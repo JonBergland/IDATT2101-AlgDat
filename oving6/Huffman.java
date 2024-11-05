@@ -17,8 +17,7 @@ public class innpakking {
 
 class Run {
     public void run() {
-        String streng = "åååååDetteoaoaaahhhh skiiiiittttttttttttttttt pomfrites\n"
-        + "SKjerrra Dette er en lang tekst neoeeoe bagherea +?!|";
+        String streng = "Dette er en streng WOOOOOOAAAHAHSHDSH1 1010e0e+32+";
         System.out.println(streng);
         Huffman huffman = new Huffman();
 
@@ -38,7 +37,7 @@ class Run {
 }
 
 class Huffman {
-    private final int FREQUENCYLENGTH = 256;
+    private final int FREQUENCYLENGTH = 256 * Integer.BYTES;
 
     public Huffman() {
     }
@@ -54,8 +53,13 @@ class Huffman {
 
         // Konverterer Frekvenstabellen til bytes
         byte[] frekvensTabell = new byte[this.FREQUENCYLENGTH];
+        int byteIndex = 0;
         for (int i = 0; i < frekvensListe.length; i++) {
-            frekvensTabell[i] = (byte) frekvensListe[i];
+            byte[] frekvensByte = ByteBuffer.allocate(Integer.BYTES).putInt(frekvensListe[i]).array();
+            for (int l = 0; l < frekvensByte.length; l++) {
+                frekvensTabell[byteIndex] = frekvensByte[l];
+                byteIndex ++;
+            }
         }
 
         int bitIndex = 0;
@@ -86,10 +90,14 @@ class Huffman {
             throw new IllegalArgumentException("Input er mangler frekvenstabell");
         }
         System.arraycopy(input, 0, frekvensTabell, 0, this.FREQUENCYLENGTH);
-        int[] frekvensListe = new int[this.FREQUENCYLENGTH];
+        int[] frekvensListe = new int[this.FREQUENCYLENGTH / Integer.BYTES];
 
-        for (int i = 0; i < this.FREQUENCYLENGTH; i++) {
-            frekvensListe[i] = frekvensTabell[i] & 0xFF;
+        int byteIndex = 0;
+        for (int i = 0; i < frekvensListe.length; i += 1) {
+            byte[] gydligeBitsArray = new byte[Integer.BYTES];
+            System.arraycopy(frekvensTabell, byteIndex, gydligeBitsArray, 0, Integer.BYTES);
+            frekvensListe[i] = ByteBuffer.wrap(gydligeBitsArray).getInt();
+            byteIndex += Integer.BYTES;
         }
 
         HuffmanNode rootNode = generateHuffmanTree(frekvensListe);
@@ -116,7 +124,7 @@ class Huffman {
     }
 
     public int[] generateFrequencyList(byte[] input) {
-        int[] frekvensListe = new int[this.FREQUENCYLENGTH];
+        int[] frekvensListe = new int[this.FREQUENCYLENGTH / Integer.BYTES];
         Arrays.setAll(frekvensListe, i -> 0);
 
         for (byte b : input) {
