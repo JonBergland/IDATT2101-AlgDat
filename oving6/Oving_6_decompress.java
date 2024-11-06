@@ -1,26 +1,31 @@
 import java.io.*;
 import java.util.Date;
 import java.nio.ByteBuffer;
-import java.util.Arrays;
-import java.util.BitSet;
 import java.util.PriorityQueue;
 
 public class Oving_6_decompress {
   public static void main(String[] args) throws IOException {
     Date start = new Date();
 
-    File compressedFile = new File(args[0]);
-    File decompressedFile = new File("uncompressed.txt");
+    if (args.length == 1) {
+      File compressedFile = new File(args[0]);
+      File decompressedFile = new File("decompressed.txt");
 
-    decompressedFile.delete();
+      decompressedFile.delete();
 
-    huffmann(compressedFile);
-    lempelZiv(decompressedFile);
+      huffmann(compressedFile);
+      lempelZiv(decompressedFile);
+    } else {
+      System.out.println("The program must be run like this: java Oving_6_decompress [filename] ");
+    }
+
 
     new File("huffmann").delete();
 
     Date end = new Date();
-    System.out.println(end.getTime() - start.getTime());
+    System.out.println("Elapsed time:  " + (end.getTime() - start.getTime()) + " ms");
+    System.out.println("Original file size: " + new File(args[0]).length() + " bytes");
+    System.out.println("New file size: " + new File("decompressed.txt").length() + " bytes");
   }
 
   static int forRef(DataInputStream inputStream, char currentByte, File decompressedFile)
@@ -102,14 +107,19 @@ public class Oving_6_decompress {
 
     HuffmanNode rootNode = generateHuffmanTree(frekvensListe);
 
-    byte[] fil = new byte[input.length - FREQUENCYLENGTH];
-    System.arraycopy(input, FREQUENCYLENGTH, fil, 0, fil.length);
+    byte[] data = new byte[input.length - FREQUENCYLENGTH - Long.BYTES];
+    System.arraycopy(input, FREQUENCYLENGTH, data, 0, data.length);
 
-    BitSetCollection bits = convertBytesToBits(fil);
+    byte[] gydligeBitsArray = new byte[Long.BYTES];
+    System.arraycopy(input, input.length - Long.BYTES, gydligeBitsArray, 0, Long.BYTES);
+    long gyldigeBits = ByteBuffer.wrap(gydligeBitsArray).getLong();
+
+    //BitSetCollection bits = convertBytesToBits(data);
     HuffmanNode node = rootNode;
     try (ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream()) {
-      for (int i = 0; i < bits.bitLength; i++) {
-        node = bits.bitSet.get(i) ? node.hNode : node.vNode;
+      for (int i = 0; i < gyldigeBits; i++) {
+        boolean bit = BitUtils.getBit(data, i);
+        node = bit ? node.hNode : node.vNode;
 
         if (node.hNode == null && node.vNode == null) {
           byteArrayOutputStream.write(node.tegn);
@@ -134,15 +144,6 @@ public class Oving_6_decompress {
     }
 
     return generateRootNodeFromMinHeap(nQueue);
-  }
-
-  static BitSetCollection convertBytesToBits(byte[] byteListe) {
-    byte[] gydligeBitsArray = new byte[Long.BYTES];
-    System.arraycopy(byteListe, byteListe.length - Long.BYTES, gydligeBitsArray, 0, Long.BYTES);
-    long gyldigeBits = ByteBuffer.wrap(gydligeBitsArray).getLong();
-
-    BitSet innpakketKode = BitSet.valueOf(Arrays.copyOf(byteListe, byteListe.length - 1));
-    return new BitSetCollection(innpakketKode.get(0, (int) gyldigeBits), gyldigeBits);
   }
 
   static HuffmanNode generateRootNodeFromMinHeap(PriorityQueue<HuffmanNode> nQueue) {
