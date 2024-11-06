@@ -11,14 +11,22 @@ public class Oving_6_compress {
   public static void main(String[] args) throws IOException {
     Date start = new Date();
 
-    File file = new File(args[0]);
-    lempelZiv(file);
-    huffmann();
+    if (args.length == 1) {
+      File file = new File(args[0]);
+      lempelZiv(file);
+      huffmann();
+    } else {
+      System.out.println("The program must be run like this: java Oving_6_compress [filename] ");
+    }
+
+
 
     new File("lzcompressed").delete();
 
     Date end = new Date();
-    System.out.println(end.getTime() - start.getTime());
+    System.out.println("Elapsed time:  " + (end.getTime() - start.getTime()) + " ms");
+    System.out.println("Original file size: " + new File(args[0]).length() + " bytes");
+    System.out.println("New file size: " + new File("compressed.txt").length() + " bytes");
   }
 
   static int[] findRepetitive(int i, byte[] data) {
@@ -113,16 +121,38 @@ public class Oving_6_compress {
     }
   }
 
-  static byte[] packData(byte[] input) {
+
+  public static byte[] packData(byte[] input) {
     int FREQUENCYLENGTH = 256 * Integer.BYTES;
-
     int[] frekvensListe = generateFrequencyList(input);
-
     HuffmanNode rootNode = generateHuffmanTree(frekvensListe);
+    Map<Byte, BitCollection> codeMap = generateCodes(rootNode);
 
-    Map<Byte, BitSetCollection> codeMap = generateCodes(rootNode);
+    int antallBits = 0;
+    for (byte b : input) {
+      antallBits += codeMap.get(b).bitLength;
+    }
 
-    BitSet innpakketKode = new BitSet();
+    int antallBytes = (antallBits + 7) / 8;
+    byte[] pakketData = new byte[antallBytes];
+
+
+    int bitIndex = 0;
+
+    for (byte b : input) {
+      BitCollection bits = codeMap.get(b);
+      for (int i = 0; i < bits.bitLength; i++) {
+        boolean bit = bits.getBit(i);
+        BitUtils.setBit(pakketData, bitIndex++, bit);
+      }
+    }
+
+    byte[] numberOfBits = ByteBuffer.allocate(Long.BYTES).putLong(bitIndex).array();
+
+    byte[] result = new byte[(int) (bitIndex + 7) / 8 + Long.BYTES];
+    System.arraycopy(pakketData, 0, result, 0, pakketData.length);
+    System.arraycopy(numberOfBits, 0, result, result.length - Long.BYTES, Long.BYTES);
+
 
     // Konverterer Frekvenstabellen til bytes
     byte[] frekvensTabell = new byte[FREQUENCYLENGTH];
@@ -134,24 +164,9 @@ public class Oving_6_compress {
         byteIndex ++;
       }
     }
-
-    int bitIndex = 0;
-
-    for (byte b : input) {
-      BitSetCollection bitSet = codeMap.get(b);
-      for (int i = 0; i < bitSet.bitLength; i++) {
-        innpakketKode.set(bitIndex, bitSet.bitSet.get(i));
-        bitIndex++;
-      }
-    }
-
-    BitSetCollection bitSetCollection = new BitSetCollection(innpakketKode, bitIndex);
-
-    byte[] message = convertBitsToBytes(bitSetCollection);
-
-    byte[] output = new byte[FREQUENCYLENGTH + message.length];
+    byte[] output = new byte[FREQUENCYLENGTH + result.length];
     System.arraycopy(frekvensTabell, 0, output, 0, FREQUENCYLENGTH);
-    System.arraycopy(message, 0, output, FREQUENCYLENGTH, message.length);
+    System.arraycopy(result, 0, output, FREQUENCYLENGTH, result.length);
 
     return output;
   }
@@ -192,29 +207,27 @@ public class Oving_6_compress {
     return nQueue.poll();
   }
 
-  static Map<Byte, BitSetCollection> generateCodes(HuffmanNode rootNode) {
+  static Map<Byte, BitCollection> generateCodes(HuffmanNode rootNode) {
     if (rootNode == null || rootNode.getClass() != HuffmanNode.class) {
       throw new IllegalArgumentException(rootNode + " er enten null eller ikke en HuffmanNode");
     }
-    Map<Byte, BitSetCollection> codeMap = new HashMap<>();
 
-    exploreHuffmanNode(rootNode, new BitSet(), 0, codeMap);
+    Map<Byte, BitCollection> codeMap = new HashMap<>();
+
+    exploreHuffmanNode(rootNode, 0L, 0, codeMap);
 
     return codeMap;
   }
 
-  static void exploreHuffmanNode(HuffmanNode node, BitSet bits, int bitIndex,
-                                         Map<Byte, BitSetCollection> codeMap) {
+  static void exploreHuffmanNode(HuffmanNode node, long bits, int bitLength, Map<Byte, BitCollection> codeMap) {
     if (node.vNode == null & node.hNode == null) {
-      codeMap.put(node.tegn, new BitSetCollection((BitSet) bits.clone(), bitIndex));
+      codeMap.put(node.tegn, new BitCollection(bits, bitLength));
       return;
     }
 
-    bits.clear(bitIndex);
-    exploreHuffmanNode(node.vNode, bits, bitIndex + 1, codeMap);
+    exploreHuffmanNode(node.vNode, bits << 1, bitLength + 1, codeMap);
 
-    bits.set(bitIndex);
-    exploreHuffmanNode(node.hNode, bits, bitIndex + 1, codeMap);
+    exploreHuffmanNode(node.hNode, (bits << 1) | 1, bitLength + 1, codeMap);
   }
 
   static byte[] convertBitsToBytes(BitSetCollection bits) {
@@ -280,5 +293,44 @@ class HuffmanNode implements Comparable<HuffmanNode> {
   @Override
   public int compareTo(HuffmanNode other) {
     return Integer.compare(this.frekvens, other.frekvens);
+  }
+}
+
+/*
+ * En utils-klasse for manipulering av bits
+ */
+class BitUtils {
+  public static boolean getBit(byte[] byteArray, int bitIndex) {
+    int byteIndex = bitIndex / 8;
+    int bitPosition = 7 - (bitIndex % 8);
+    return ((byteArray[byteIndex] >> bitPosition) & 1) == 1;
+  }
+
+  public static void setBit(byte[] byteArray, int bitIndex, boolean value) {
+    int byteIndex = bitIndex / 8;
+    int bitPosition = 7 - (bitIndex % 8);
+
+    if (value) {
+      byteArray[byteIndex] |= (1 << bitPosition);
+    } else {
+      byteArray[byteIndex] &= ~(1 << bitPosition);
+    }
+  }
+}
+
+/*
+ * En data klasse for bit
+ */
+class BitCollection {
+  private long bit;
+  public int bitLength;
+
+  public BitCollection(long bit, int bitLength) {
+    this.bit = bit;
+    this.bitLength = bitLength;
+  }
+
+  public boolean getBit(int index) {
+    return ((bit >> (bitLength - index - 1)) & 1) == 1;
   }
 }
