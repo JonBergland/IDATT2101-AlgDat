@@ -17,7 +17,15 @@ public class innpakking {
 
 class Run {
     public void run() {
-        String streng = "Dette er en streng WOOOOOOAAAHAHSHDSH1 1010e0e+32+";
+        String streng = "Dette er en streng +++00dsjdsjafhadjasfljadbadn" 
+        + "Dette er en reppererende streng\n"
+        + "Dette er en reppererende streng\n"
+        + "Dette er en reppererende streng\n"
+        + "Dette er en reppererende streng\n"
+        + "Dette er en reppererende streng\n"
+        + "Dette er en reppererende streng\n"
+        + "Dette er en reppererende streng\n"
+        + "Dette er en reppererende streng\n";
         System.out.println(streng);
         Huffman huffman = new Huffman();
 
@@ -44,12 +52,34 @@ class Huffman {
 
     public byte[] packData(byte[] input) {
         int[] frekvensListe = generateFrequencyList(input);
-
         HuffmanNode rootNode = generateHuffmanTree(frekvensListe);
+        Map<Byte, BitCollection> codeMap = generateCodes(rootNode);
 
-        Map<Byte, BitSetCollection> codeMap = generateCodes(rootNode);
+        int antallBits = 0;
+        for (byte b : input) {
+            antallBits += codeMap.get(b).bitLength;
+        }
 
-        BitSet innpakketKode = new BitSet();
+        int antallBytes = (antallBits + 7) / 8;
+        byte[] pakketData = new byte[antallBytes];
+
+
+        int bitIndex = 0;
+
+        for (byte b : input) {
+            BitCollection bits = codeMap.get(b);
+            for (int i = 0; i < bits.bitLength; i++) {
+                boolean bit = bits.getBit(i);
+                BitUtils.setBit(pakketData, bitIndex++, bit);
+            }
+        }
+
+        byte[] numberOfBits = ByteBuffer.allocate(Long.BYTES).putLong(bitIndex).array();
+
+        byte[] result = new byte[(int) (bitIndex + 7) / 8 + Long.BYTES];
+        System.arraycopy(pakketData, 0, result, 0, pakketData.length);
+        System.arraycopy(numberOfBits, 0, result, result.length - Long.BYTES, Long.BYTES);
+
 
         // Konverterer Frekvenstabellen til bytes
         byte[] frekvensTabell = new byte[this.FREQUENCYLENGTH];
@@ -61,24 +91,9 @@ class Huffman {
                 byteIndex ++;
             }
         }
-
-        int bitIndex = 0;
-
-        for (byte b : input) {
-            BitSetCollection bitSet = codeMap.get(b);
-            for (int i = 0; i < bitSet.bitLength; i++) {
-                innpakketKode.set(bitIndex, bitSet.bitSet.get(i));
-                bitIndex++;
-            }
-        }
-
-        BitSetCollection bitSetCollection = new BitSetCollection(innpakketKode, bitIndex);
-
-        byte[] message = convertBitsToBytes(bitSetCollection);
-
-        byte[] output = new byte[this.FREQUENCYLENGTH + message.length];
+        byte[] output = new byte[this.FREQUENCYLENGTH + result.length];
         System.arraycopy(frekvensTabell, 0, output, 0, this.FREQUENCYLENGTH);
-        System.arraycopy(message, 0, output, this.FREQUENCYLENGTH, message.length);
+        System.arraycopy(result, 0, output, this.FREQUENCYLENGTH, result.length);
 
         return output;
     }
@@ -102,14 +117,19 @@ class Huffman {
 
         HuffmanNode rootNode = generateHuffmanTree(frekvensListe);
 
-        byte[] fil = new byte[input.length - this.FREQUENCYLENGTH];
-        System.arraycopy(input, this.FREQUENCYLENGTH, fil, 0, fil.length);
+        byte[] data = new byte[input.length - this.FREQUENCYLENGTH - Long.BYTES];
+        System.arraycopy(input, this.FREQUENCYLENGTH, data, 0, data.length);
 
-        BitSetCollection bits = convertBytesToBits(fil);
+        byte[] gydligeBitsArray = new byte[Long.BYTES];
+        System.arraycopy(input, input.length - Long.BYTES, gydligeBitsArray, 0, Long.BYTES);
+        long gyldigeBits = ByteBuffer.wrap(gydligeBitsArray).getLong();
+
+        //BitSetCollection bits = convertBytesToBits(data);
         HuffmanNode node = rootNode;
         try (ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream()) {
-            for (int i = 0; i < bits.bitLength; i++) {
-                node = bits.bitSet.get(i) ? node.hNode : node.vNode;
+            for (int i = 0; i < gyldigeBits; i++) {
+                boolean bit = BitUtils.getBit(data, i);
+                node = bit ? node.hNode : node.vNode;
 
                 if (node.hNode == null && node.vNode == null) {
                     byteArrayOutputStream.write(node.tegn);
@@ -157,47 +177,27 @@ class Huffman {
         return nQueue.poll();
     }
 
-    public Map<Byte, BitSetCollection> generateCodes(HuffmanNode rootNode) {
+    public Map<Byte, BitCollection> generateCodes(HuffmanNode rootNode) {
         if (rootNode == null || rootNode.getClass() != HuffmanNode.class) {
             throw new IllegalArgumentException(rootNode + " er enten null eller ikke en HuffmanNode");
         }
-        Map<Byte, BitSetCollection> codeMap = new HashMap<>();
 
-        exploreHuffmanNode(rootNode, new BitSet(), 0, codeMap);
+        Map<Byte, BitCollection> codeMap = new HashMap<>();
+
+        exploreHuffmanNode(rootNode, 0L, 0, codeMap);
 
         return codeMap;
     }
 
-    private void exploreHuffmanNode(HuffmanNode node, BitSet bits, int bitIndex, Map<Byte, BitSetCollection> codeMap) {
+    private void exploreHuffmanNode(HuffmanNode node, long bits, int bitLength, Map<Byte, BitCollection> codeMap) {
         if (node.vNode == null & node.hNode == null) {
-            codeMap.put(node.tegn, new BitSetCollection((BitSet) bits.clone(), bitIndex));
+            codeMap.put(node.tegn, new BitCollection(bits, bitLength));
             return;
         }
 
-        bits.clear(bitIndex);
-        exploreHuffmanNode(node.vNode, bits, bitIndex + 1, codeMap);
+        exploreHuffmanNode(node.vNode, bits << 1, bitLength + 1, codeMap);
 
-        bits.set(bitIndex);
-        exploreHuffmanNode(node.hNode, bits, bitIndex + 1, codeMap);
-    }
-
-    private byte[] convertBitsToBytes(BitSetCollection bits) {
-        byte[] byteListe = bits.bitSet.toByteArray();
-        byte[] numberOfBits = ByteBuffer.allocate(Long.BYTES).putLong(bits.bitLength).array();
-
-        byte[] result = new byte[(int) (bits.bitLength + 7) / 8 + Long.BYTES];
-        System.arraycopy(byteListe, 0, result, 0, byteListe.length);
-        System.arraycopy(numberOfBits, 0, result, byteListe.length, Long.BYTES);
-        return result;
-    }
-
-    private BitSetCollection convertBytesToBits(byte[] byteListe) {
-        byte[] gydligeBitsArray = new byte[Long.BYTES];
-        System.arraycopy(byteListe, byteListe.length - Long.BYTES, gydligeBitsArray, 0, Long.BYTES);
-        long gyldigeBits = ByteBuffer.wrap(gydligeBitsArray).getLong();
-
-        BitSet innpakketKode = BitSet.valueOf(Arrays.copyOf(byteListe, byteListe.length - 1));
-        return new BitSetCollection(innpakketKode.get(0, (int) gyldigeBits), gyldigeBits);
+        exploreHuffmanNode(node.hNode, (bits << 1) | 1, bitLength + 1, codeMap);
     }
 
     public byte[] encodeStringToBytes(String input) {
@@ -260,5 +260,44 @@ class BitSetCollection {
     public BitSetCollection(BitSet bitSet, long bitLength) {
         this.bitSet = bitSet;
         this.bitLength = bitLength;
+    }
+}
+
+/*
+ * En utils-klasse for manipulering av bits
+ */
+class BitUtils {
+    public static boolean getBit(byte[] byteArray, int bitIndex) {
+        int byteIndex = bitIndex / 8;
+        int bitPosition = 7 - (bitIndex % 8);
+        return ((byteArray[byteIndex] >> bitPosition) & 1) == 1;
+    }
+
+    public static void setBit(byte[] byteArray, int bitIndex, boolean value) {
+        int byteIndex = bitIndex / 8;
+        int bitPosition = 7 - (bitIndex % 8);
+
+        if (value) {
+            byteArray[byteIndex] |= (1 << bitPosition);
+        } else {
+            byteArray[byteIndex] &= ~(1 << bitPosition);
+        }
+    }
+}
+
+/*
+ * En data klasse for bit
+ */
+class BitCollection {
+    private long bit;
+    public int bitLength;
+
+    public BitCollection(long bit, int bitLength) {
+        this.bit = bit;
+        this.bitLength = bitLength;
+    }
+
+    public boolean getBit(int index) {
+        return ((bit >> (bitLength - index - 1)) & 1) == 1;
     }
 }
