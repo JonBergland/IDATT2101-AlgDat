@@ -1,6 +1,7 @@
 package oving7;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -42,13 +43,90 @@ class Run {
         graf.addKant(new Kant(node6, node7, 15));
 
         Djikstra djikstra = new Djikstra();
+        A_star a_star = new A_star();
         //Graf nyGraf = djikstra.kjorDjikstra(graf, graf.getStack().pop());
         Graf nyGraf = djikstra.kortesteVei(graf, node6, node5);
         nyGraf.print();
 
+        Graf nyGraf2 = a_star.kjorAStar(graf, node6, node5);
+        nyGraf2.print();
         
     }
 }
+
+class ALT {
+    Node landemerke1;
+    Node landemerke2;
+    Node landemerke3;
+    Node landemerke4;
+
+    int[][] avstanderFra;
+    int[][] avstanderTil;
+
+    public ALT(Node landemerke1, Node landemerke2, Node landemerke3, Node landemerke4, int[][] avstanderFra,
+    int[][] avstanderTil) {
+        this.landemerke1 = landemerke1;
+        this.landemerke2 = landemerke2;
+        this.landemerke3 = landemerke3;
+        this.landemerke4 = landemerke4;
+        this.avstanderFra = avstanderFra;
+        this.avstanderTil = avstanderTil;
+    }
+
+    public Graf kjorALT(Graf graf, Node startNode, Node maalNode) {
+        Stack<Node> grStack = graf.getStack();
+		if (!grStack.contains(startNode) || !grStack.contains(maalNode)) {
+			throw new IllegalArgumentException("Noden er ikke i Grafen");
+		}
+
+		// Setter avstand til den første noden til 0
+		startNode.setAvstand(0);
+
+		PriorityQueue<Node> nQueue = new PriorityQueue<>();
+
+		// Bruker kantene ut fra første node til å sette avstanden og estimatet i nabonodene
+		for (Kant k : startNode.kantListe) {
+			Node til = k.til;
+			til.avstand = k.vekt;
+            til.estimat = beregnEstimat(til, maalNode); 
+            til.setKortesteKant(k);
+			nQueue.add(til);
+		}
+
+        while (nQueue.size() > 0) {
+			Node neste = nQueue.poll();
+			if (neste.equals(maalNode)) {
+				return graf;
+			}
+			for (Kant k : neste.kantListe) {
+                Node til = k.til;
+                int nyAvstand = k.vekt + neste.avstand;
+                if (til.avstand == Integer.MAX_VALUE) {
+                    til.avstand = nyAvstand;
+                    til.estimat = beregnEstimat(til, maalNode);
+                    til.setKortesteKant(k);
+                    nQueue.add(til);
+                } else if (nyAvstand < til.avstand) {
+                    til.avstand = nyAvstand;
+                    til.setKortesteKant(k);
+                }
+            }
+		}
+
+        return graf;
+    }
+
+    public double beregnEstimat(Node startNode, Node maalNode) {
+        List<Integer> avstandLandemerker = new ArrayList<>();
+        for (int i = 0; i < 4; i ++) {
+            avstandLandemerker.add(avstanderFra[i][maalNode.nr] - avstanderFra[i][startNode.nr]);
+            avstandLandemerker.add(avstanderTil[i][startNode.nr] - avstanderTil[i][maalNode.nr]);
+        }
+
+        return (Collections.max(avstandLandemerker) > 0) ? Collections.max(avstandLandemerker) : 0;
+    }
+}
+
 
 class A_star {
     public Graf kjorAStar(Graf graf, Node startNode, Node maalNode) {
@@ -100,8 +178,6 @@ class A_star {
     }
 }
 
-
-
 class Djikstra {
 	public Graf kjorDjikstra(Graf graf, Node fNode) {
 		Stack<Node> grStack = graf.getStack();
@@ -132,15 +208,10 @@ class Djikstra {
 	}
 
 	public Graf kortesteVei(Graf graf, Node startNode, Node maalNode) {
-		// Snur grafen for å ta utgangspunkt i målnoden
-		Graf omvGraf = graf.snuGraf();
-		Stack<Node> grStack = omvGraf.getStack();
+		Stack<Node> grStack = graf.getStack();
 		if (!grStack.contains(startNode) || !grStack.contains(maalNode)) {
 			throw new IllegalArgumentException("Noden er ikke i Grafen");
 		}
-
-        startNode = omvGraf.noder.get(startNode.nr);
-        maalNode = omvGraf.noder.get(maalNode.nr);
 
 		maalNode.setAvstand(0);
 
@@ -159,11 +230,11 @@ class Djikstra {
 		while (nQueue.size() > 0) {
 			Node neste = nQueue.poll();
 			if (neste.equals(startNode)) {
-				return omvGraf;
+				return graf;
 			}
 			sjekkKanter(neste, nQueue);
 		}
-		return omvGraf;
+		return graf;
 	}
 
     public static void sjekkKanter(Node node, PriorityQueue<Node> nQueue) {
